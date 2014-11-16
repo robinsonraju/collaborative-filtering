@@ -10,26 +10,33 @@ For each record
         value of missing_attribute = weighted average of the value from other records
 "
 
-## Load Input data ##
+## Load Input data & initialize output ##
 input.data <- ReadCSVFile('input_data.csv')
+output.with.ratings <- input.data 
 
 # Find which columns have ratings and which dont. 
 input.data.na = input.data[,is.na(input.data)]
 input.with.ratings = input.data[,!is.na(input.data)]
 
 ## Load Training(historical) data ## 
-trng.data <- ReadCSVFile('jester5k-10.csv')
+trng.data <- ReadCSVFile('jester5k.csv')
 
 # Get all records that have valid values for columns in input that have ratings
 trng.with.ratings <- na.omit(trng.data[,colnames(input.with.ratings)])
 
 # Calculate distance from input to all the recs with ratings
 # Return top 10 records
-dv <- GetCosineDistVec(input.with.ratings, trng.with.ratings, 10)
+dist.vec <- GetCosineDistVecTopK(input.with.ratings, trng.with.ratings, 10)
+closest.trng.recs <- trng.data[names(dist.vec),]
 
+# Loop through the na columns to populate them
 for (i in 1:ncol(input.data.na)) {
-    #print(colnames(input.data.na)[i])
-    
-    
+    col.na <- colnames(input.data.na)[i]
+    output.with.ratings[col.na] <- mean(closest.trng.recs[,col.na])
 }
 
+# Recommendation
+output.with.recomm <- output.with.ratings[,colnames(input.data.na)]
+top.10.recomm <- names(sort(output.with.recomm, decreasing=TRUE))[1:10]
+
+print(top.10.recomm)
