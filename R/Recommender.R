@@ -7,7 +7,7 @@ For each record
         compute distance between current_rec and each_record
     for each missing_attribute 
         filter out records from query_res that dont have value for missing_attribute
-        value of missing_attribute = weighted average of the value from other records
+        value of missing_attribute =  average of the value from other records
 "
 
 ## Load Input data & initialize output ##
@@ -32,7 +32,7 @@ closest.trng.recs <- trng.data[names(dist.vec),]
 # Loop through the na columns to populate them
 for (i in 1:ncol(input.data.na)) {
     col.na <- colnames(input.data.na)[i]
-    output.with.ratings[col.na] <- mean(closest.trng.recs[,col.na])
+    output.with.ratings[col.na] <- mean(closest.trng.recs[,col.na], na.rm=TRUE)
 }
 
 # Recommendation

@@ -36,7 +36,7 @@ GetCosineDistVecTopK <- function(input.rec, trng.rec, k) {
     }
     
     # Sort the similarity scores
-    dist.vec <- sort(dv, decreasing = TRUE)
+    dist.vec <- sort(dist.vec, decreasing = TRUE)
     
     # Filter top k values
     if(length(dist.vec) > nrow(trng.rec)) {
