@@ -13,7 +13,11 @@ if (VERBOSE)
     print("Loading libraries and functions for project")
 
 ## Load libraries
-# None for now. 
+# loading recommenderlab for comparison
+library(recommenderlab)
+
+# load Jester dataset
+data(Jester5k)
 
 ## Load utilities
 # File that contains utilities
