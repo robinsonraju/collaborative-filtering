@@ -63,7 +63,7 @@ GetCosineDistVecTopK <- function(input.rec, trng.recs, k) {
 # [1] 1.183216
 ComputeRMSE <- function(actual, predicted) {
     error <- actual - predicted    
-    sqrt(mean(error^2))
+    sqrt(mean(error^2, na.rm=TRUE))
 }
 
 # Comparison with Recommenderlab package

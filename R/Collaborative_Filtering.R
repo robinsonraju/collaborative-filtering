@@ -2,7 +2,7 @@
 
 # Global variables used throughout
 projectDir = getwd()
-VERBOSE=TRUE
+VERBOSE = TRUE
 codeDir = file.path(projectDir, 'R')
 dataDir = file.path(projectDir, 'data')
 outputDir = file.path(projectDir, 'output')
@@ -26,11 +26,15 @@ if (VERBOSE) print(input.data)
 
 # Load Training(historical) data #
 if (VERBOSE) print("Loading Training data - Jester5k")
-trng.data <- ReadCSVFile('jester5k.csv')
+trng.data <- ReadCSVFile('jester5k-1000.csv')
 if (VERBOSE) print(paste(nrow(trng.data), " records loaded"))
 
 # Calling Recommend function
-top.10.recomm <- Recommend(input.data, trng.data, 10, 10)
-if (VERBOSE) print("Recommending top 10 jokes that user has not rated")
-print(top.10.recomm)
+#if (VERBOSE) print("Recommending top 10 jokes that user has not rated")
+#top.10.recomm <- Recommend(input.data, trng.data, 10, 10)
+#print(top.10.recomm)
 
+# Calling RMSE function 
+if (VERBOSE) print("Computing RMSE by taking 10% of values")
+RMSE.values <- trng.RMSE(trng.data)
+print(RMSE.values)
