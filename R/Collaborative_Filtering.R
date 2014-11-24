@@ -18,6 +18,12 @@ source(file.path(codeDir, 'Recommender.R'))
 
 if (VERBOSE) print("Completed loading libraries & functions")
 
+#Settings for this run
+K = 10 
+WEIGHTED_AVG = FALSE
+CENTERED_DIST = TRUE 
+NUM_RECOMMS = 10 
+
 ############ Executing the functions ################
 # Load Input data & initialize output #
 if (VERBOSE) print("Loading Input")
@@ -30,11 +36,24 @@ trng.data <- ReadCSVFile('jester5k-1000.csv')
 if (VERBOSE) print(paste(nrow(trng.data), " records loaded"))
 
 # Calling Recommend function
-#if (VERBOSE) print("Recommending top 10 jokes that user has not rated")
-#top.10.recomm <- Recommend(input.data, trng.data, 10, 10)
-#print(top.10.recomm)
+if (VERBOSE) print(paste("Recommending top", NUM_RECOMMS, "jokes that user has not rated"))
+top.n.recomm <- Recommend(input.data, trng.data, K, WEIGHTED_AVG, CENTERED_DIST, NUM_RECOMMS)
 
 # Calling RMSE function 
 if (VERBOSE) print("Computing RMSE by taking 10% of values")
-RMSE.values <- trng.RMSE(trng.data)
+RMSE.values <- trng.RMSE.short(trng.data,K, WEIGHTED_AVG, CENTERED_DIST)
+
+# Print output
+if (VERBOSE) {
+    print("Settings for this run")
+    print(paste("K:", K, 
+                "WEIGHTED_AVG:", WEIGHTED_AVG, 
+                "CENTERED_DIST", CENTERED_DIST, 
+                "NUM_RECOMMS", NUM_RECOMMS))
+}
+
+print("top n recommendations")
+print(top.n.recomm)
+
+print("RMSE")
 print(RMSE.values)

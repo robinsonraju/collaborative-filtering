@@ -8,7 +8,12 @@
 #   knn.recs = Calculate distance from input.data to all the recs in similar.recs, return top k
 #   For each na.col in na.cols
 #       value of na.col = average of the value of the knn_records for the same column.
-GetRecommendedRatings <- function(input.data, trng.data, k=10, na.col=NA) {
+GetRecommendedRatings <- function(input.data, 
+                                  trng.data, 
+                                  k=10, 
+                                  na.col=NA, 
+                                  weighted.avg=FALSE,
+                                  centered=FALSE) {
     output.with.ratings <- input.data 
     
     # Find which columns have ratings and which don't.
@@ -23,19 +28,19 @@ GetRecommendedRatings <- function(input.data, trng.data, k=10, na.col=NA) {
     # Calculate distance from input to all the recs with ratings
     # Return top 10 records
     if (VERBOSE) print("Calculating similarity and getting the top 10")
-    dist.vec <- GetCosineDistVecTopK(input.with.ratings, trng.with.ratings, 10)
+    dist.vec <- GetCosineDistVecTopK(input.with.ratings, trng.with.ratings, 10, centered)
     closest.trng.recs <- trng.data[names(dist.vec),]
     
     # Populate recommended value for NA attribute(s)
-    if (is.null(na.col) & is.na(na.col)) {
+    if (is.na(na.col)) {
         if (VERBOSE) print("Computing rating for each NA column in the input")
         for (i in 1:ncol(input.data.na)) {
             col.na <- colnames(input.data.na)[i]
-            output.with.ratings[col.na] <- mean(closest.trng.recs[,col.na], na.rm=TRUE)
+            output.with.ratings[col.na] <- Average(dist.vec, closest.trng.recs, col.na, weighted.avg)
         }
     } else {
         if (VERBOSE) print(paste("Computing rating one NA col ", na.col))
-        output.with.ratings[na.col] <- mean(closest.trng.recs[,na.col], na.rm=TRUE)
+        output.with.ratings[na.col] <- Average(dist.vec, closest.trng.recs, na.col, weighted.avg)
     }
     
     return (output.with.ratings)
@@ -50,9 +55,10 @@ GetRecommendedRatings <- function(input.data, trng.data, k=10, na.col=NA) {
 #   output.with.ratings = vector with all NA values filled by using CF algorithm
 #   Sort recommendations based on rating values in decreasing order
 #   Return top n. 
-Recommend <- function (input.data, trng.data, k=10, n=10) {
+Recommend <- function (input.data, trng.data, 
+                       k=10, weighted.avg=FALSE, centered=FALSE, n=10) {
     input.data.na = input.data[,is.na(input.data)]
-    output.with.ratings <- GetRecommendedRatings(input.data, trng.data, k)
+    output.with.ratings <- GetRecommendedRatings(input.data, trng.data, k, NA, weighted.avg, centered)
     
     # Recommendation
     output.with.recomm <- output.with.ratings[,colnames(input.data.na)]
@@ -61,11 +67,10 @@ Recommend <- function (input.data, trng.data, k=10, n=10) {
         print(output.with.recomm)
     }
     
-    top.10.recomm <- names(sort(output.with.recomm, decreasing=TRUE))[1:n]
-    top.10.recomm
+    names(sort(output.with.recomm, decreasing=TRUE))[1:n]
 }
 
-trng.RMSE <- function (full.data) {
+trng.RMSE.long <- function (full.data, k=10, weighted.avg=FALSE, centered=FALSE) {
     start <- Sys.time()
     num.rows <- nrow(full.data) 
     
@@ -79,7 +84,6 @@ trng.RMSE <- function (full.data) {
     u.names <- rownames(ts.data)
     
     for (i in 1:nrow(ts.data)) {  
-        print(paste("i ", i))
         curr.rec <- ts.data[i,]
         row.name <- u.names[i]
 
@@ -93,16 +97,50 @@ trng.RMSE <- function (full.data) {
             temp <- curr.rec
             temp[col.name] <- NA
         
-            rec.ratings <- GetRecommendedRatings(temp, tr.data, 10, col.name)            
+            rec.ratings <- GetRecommendedRatings(temp, tr.data, k, col.name, weighted.avg, centered)         
             curr.rec.recom.ratings[col.name] <- rec.ratings[col.name]
             
-            if (VERBOSE) print(paste("col ",col.name," curr recommendation", curr.rec.recom.ratings[col.name]))
+            if (VERBOSE) print(paste("col ",col.name,
+                                     "orig value ", curr.rec.orig.ratings[col.name],
+                                     " curr recommendation", curr.rec.recom.ratings[col.name]))
         }
         
         RMSE.ts.data[row.name] <- ComputeRMSE(curr.rec.orig.ratings, curr.rec.recom.ratings)
         if (VERBOSE) print(paste("row ", row.name , " rmse ", RMSE.ts.data[row.name] ))
     }
     
+    end <- Sys.time()
+    if (VERBOSE) print(end - start)
+    
+    RMSE.ts.data
+}
+
+trng.RMSE.short <- function (full.data, k=10, weighted.avg=FALSE, centered=FALSE) {
+    start <- Sys.time()
+    num.rows <- nrow(full.data) 
+    
+    # 90% is training, 10% is testing data
+    ninety_perct <- round(0.9 * num.rows , 0)
+    tr.data <- full.data[1:ninety_perct,]
+    ts.data <- full.data[(ninety_perct+1):num.rows,]
+   
+    col.name <- "j32" #Call function that will give column with max num of ratings
+    recom.data <- ts.data
+    recom.data[,col.name] <- NA
+    
+    for (i in 1:nrow(ts.data)) {  
+        curr.rec <- ts.data[i,]
+        
+        if (!is.na(curr.rec[col.name])){
+            rec.ratings <- GetRecommendedRatings(recom.data[i,], tr.data, k, col.name, weighted.avg, centered)
+            recom.data[i,col.name] <- rec.ratings[col.name]
+        }
+        if (VERBOSE) print(paste("row ",i,
+                                 "orig value ", ts.data[i,col.name],
+                                 " curr recommendation", recom.data[i,col.name]))
+    }
+    
+    RMSE.ts.data <- ComputeRMSE(ts.data[,col.name], recom.data[,col.name])
     end <- Sys.time()
     if (VERBOSE) print(end - start)
     
