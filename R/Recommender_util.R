@@ -68,7 +68,7 @@ GetCosineDistVecTopK <- function(input.rec, trng.recs, k, centered=FALSE) {
     dist.vec <- sort(dist.vec, decreasing = TRUE)
     
     # Filter top k values
-    if(length(dist.vec) > nrow(trng.recs)) {
+    if(length(dist.vec) >= nrow(trng.recs)) {
         dist.vec <- dist.vec[1:k] 
     }
     
@@ -100,11 +100,13 @@ ComputeRMSE <- function(actual, predicted) {
 # > Average(sim.vec, records, "c1", TRUE)
 # [1] 0.4
 Average <- function(sim.vec, records, avg.col, weighted.avg=FALSE) {
+    avg <- 0
     if (weighted.avg) {
-        WeightedAverage(sim.vec, records, avg.col)
+        avg <- WeightedAverage(sim.vec, records, avg.col)
     } else {
-        mean(records[,avg.col], na.rm=TRUE)
+        avg <- mean(records[,avg.col], na.rm=TRUE)
     }
+    avg
 }
 
 ## Helper function to compute weighted average
@@ -120,10 +122,13 @@ Average <- function(sim.vec, records, avg.col, weighted.avg=FALSE) {
 WeightedAverage <- function(sim.vec, records, avg.col) {
     s <- sum(records[,avg.col], na.rm=TRUE)
     p <- 0
+
     for(i in 1:nrow(records)) {
-        p <- p + (sim.vec[i] * records[i, avg.col])
+        if(!is.na(sim.vec[i]) && !is.na(records[i, avg.col])) {
+            p <- p + (sim.vec[i] * records[i, avg.col])
+        }
     }
-    p / s
+    p * 10 / s
 }
 
 # Comparison with Recommenderlab package

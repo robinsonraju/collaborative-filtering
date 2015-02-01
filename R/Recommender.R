@@ -27,8 +27,9 @@ GetRecommendedRatings <- function(input.data,
     
     # Calculate distance from input to all the recs with ratings
     # Return top 10 records
-    if (VERBOSE) print("Calculating similarity and getting the top 10")
-    dist.vec <- GetCosineDistVecTopK(input.with.ratings, trng.with.ratings, 10, centered)
+    if (VERBOSE) print(paste("Calculating similarity and getting the top k",k))
+    dist.vec <- GetCosineDistVecTopK(input.with.ratings, trng.with.ratings, k, centered)
+    
     closest.trng.recs <- trng.data[names(dist.vec),]
     
     # Populate recommended value for NA attribute(s)
